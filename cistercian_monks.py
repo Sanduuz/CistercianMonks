@@ -13,7 +13,10 @@ def load_graphics(graphics_folder: str = "graphics") -> list:
     """
 
     graphics = []
-    for graphic in os.listdir(graphics_folder):
+    graphic_files = os.listdir(graphics_folder)
+    graphic_files.sort()
+
+    for graphic in graphic_files:
         graphics.append(Image.open(f"{graphics_folder}/{graphic}").convert("1"))
 
     return graphics
