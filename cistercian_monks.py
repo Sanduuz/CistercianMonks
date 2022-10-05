@@ -2,6 +2,7 @@
 
 import os
 import sys
+import math
 import random
 from PIL import Image, ImageChops
 
@@ -46,18 +47,21 @@ def encode_message(message: list) -> Image.Image:
     print("[*] Generating random numbers...")
     numbers = gen_numbers(" ".join(message))
 
-    # For now the message in the image
-    # will be on one long line.
-    x, y = 0, 200
+    msg_length = 0
 
-    # Calculate image x dimension
+    # Calculate image dimensions (Approximate a square)
     for word in message:
-        x += 150 * len(word)
+        msg_length += len(word)
+
+    dimension = math.ceil(math.sqrt(msg_length))
+    x, y = 150 * dimension, 200 * dimension 
 
     # "1" means black and white image
     image = Image.new("1", (x, y), "white")
 
-    for offset, number in enumerate(numbers):
+    offset_x, offset_y = 0, 0
+
+    for number in numbers:
         a, b, c, d = map(int, list(number))
 
         symbol_a = symbols[3*9 + a - 1] if a != 0 else symbols[-1]
@@ -70,7 +74,12 @@ def encode_message(message: list) -> Image.Image:
         symbol_part_2 = ImageChops.logical_and(symbol_c, symbol_d)
         symbol = ImageChops.logical_and(symbol_part_1, symbol_part_2)
 
-        image.paste(symbol, (offset * 150, 0))
+        image.paste(symbol, (offset_x, offset_y))
+
+        offset_x += 150
+        if offset_x >= 150 * dimension:
+            offset_x = 0
+            offset_y += 200
 
     image.show()
 
