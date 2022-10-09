@@ -4,10 +4,10 @@ import os
 import sys
 import math
 import random
+import datetime
 from PIL import Image, ImageChops, ImageStat
 
-# TODO: Read multiple symbols from 1 file.
-# Split image into segments of 150x200 and parse symbols.
+MOD = 512
 
 def load_graphics(graphics_folder: str = "graphics") -> list:
     """
@@ -40,7 +40,7 @@ def gen_numbers(string: str) -> list:
         found = False
         while not found:
             random_number = random.randint(1, 9999)
-            if random_number % 127 == num:
+            if random_number % MOD == num:
                 found = True
         numbers.append(str(random_number).zfill(4))
 
@@ -181,7 +181,7 @@ def decode_numeral(numeral: int) -> str:
     to the ASCII table.
     """
 
-    return chr(numeral % 127)
+    return chr(numeral % MOD)
 
 
 def get_symbols_from_image(image: Image.Image) -> list:
@@ -235,7 +235,16 @@ if __name__ == "__main__":
 
     if option == "E":
         image = encode_message(data)
-        image.show()
+        location = f"output/message_{datetime.datetime.now().strftime('%y-%m-%d_%H-%M-%S')}.png"
+        image.save(location)
+        print(f"[+] Encoded message saved - {location}")
+        choice = input("[?] Show image now? (y/N): ").upper()
+        if choice == "Y":
+            image.show()
+        elif choice == "N" or choice == "":
+            exit()
+        else:
+            exit(f"Invalid choice - {choice}")
 
     elif option == "D":
         for file in data:
