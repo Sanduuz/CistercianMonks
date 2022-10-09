@@ -56,14 +56,11 @@ def encode_message(message: list) -> Image.Image:
     print("[*] Generating random numbers...")
     numbers = gen_numbers(" ".join(message))
 
-    msg_length = 0
+    msg_length = len(" ".join(message))
 
     # Calculate image dimensions (Approximate a square)
-    for word in message:
-        msg_length += len(word)
-
     dimension = math.ceil(math.sqrt(msg_length))
-    x, y = 150 * dimension, 200 * dimension 
+    x, y = 150 * dimension, 200 * dimension
 
     # "1" means black and white image
     image = Image.new("1", (x, y), "white")
@@ -90,7 +87,7 @@ def encode_message(message: list) -> Image.Image:
             offset_x = 0
             offset_y += 200
 
-    image.show()
+    return image
 
 
 def divide_image(image: Image.Image) -> list:
@@ -136,15 +133,10 @@ def compare_images(image1: Image.Image, image2: Image.Image) -> bool:
     return False
 
 
-def parse_symbol(file: str) -> str:
-    """
-    This function opens the given file and decodes
-    the symbol.
-    """
+def parse_symbol(message_symbol: Image.Image) -> int:
+    """ This function decodes given symbol. """
 
     numeral = 0
-
-    message_symbol = Image.open(file)
 
     # [top left, top right, bottom left, bottom right]
     message_symbol_parts = divide_image(message_symbol)
@@ -192,6 +184,44 @@ def decode_numeral(numeral: int) -> str:
     return chr(numeral % 127)
 
 
+def get_symbols_from_image(image: Image.Image) -> list:
+    """
+    This function parses multiple symbols
+    from single file and returns a list
+    of those symbols.
+    """
+
+    image_width, image_height = image.size
+    num_of_symbols_x = image_width // 150
+    num_of_symbols_y = image_height // 200
+    symbol_width = 150
+    symbol_height = 200
+
+    symbols = []
+
+    # Rectangle that will be cropped over each symbol at a time
+    # [Left, Top, Right, Bottom]
+    crop_rect = [0, 0, symbol_width, symbol_height]
+
+    for _ in range(num_of_symbols_y):
+        for _ in range(num_of_symbols_x):
+            symbol = image.crop(tuple(crop_rect))
+            symbols.append(symbol)
+
+            # Add offsets in x level
+            crop_rect[0] += symbol_width
+            crop_rect[2] += symbol_height
+
+        # Reset x level offsets
+        crop_rect[0], crop_rect[2] = 0, symbol_width
+
+        # Add y level offsets
+        crop_rect[1] += symbol_height
+        crop_rect[3] += symbol_height
+
+    return symbols
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         exit(f"Usage: {sys.argv[0]} <(E)ncode/(D)ecode> <Message/Cipher_file>")
@@ -204,12 +234,20 @@ if __name__ == "__main__":
     symbols = load_graphics()
 
     if option == "E":
-        encode_message(data)
+        image = encode_message(data)
+        image.show()
 
     elif option == "D":
         for file in data:
             if os.path.isfile(file):
-                print(decode_numeral(parse_symbol(file)))
+                image = Image.open(file)
+                print(f"[*] Parsing symbols from file... - {file}")
+                message_symbols = get_symbols_from_image(image)
+                message = []
+                print(f"[*] Decoding symbols...")
+                for symbol in message_symbols:
+                    message.append(decode_numeral(parse_symbol(symbol)))
+                print(f"[+] Decoded message: {''.join(message)}")
             else:
                 print(f"[!] No such file - {file}")
 
